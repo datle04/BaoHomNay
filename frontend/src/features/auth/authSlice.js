@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 
-const API = '/api/auth'
+const API = 'http://localhost:5000/api/auth'
 
 const initialState = {
   user: null,

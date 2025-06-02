@@ -7,7 +7,7 @@ import commentReducer from './features/comment/commentSlice'
 import voteReducer from './features/votes/voteSlice'
 import userReducer from './features/user/userSlice'
 
-export const store = configureStore({
+const store = configureStore({
   reducer: {
     auth: authReducer,
     articles: articleReducer,
@@ -17,3 +17,5 @@ export const store = configureStore({
     users: userReducer,
   },
 })
+
+export default store;
