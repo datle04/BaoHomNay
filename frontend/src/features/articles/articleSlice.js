@@ -12,8 +12,6 @@ const initialState = {
 
 export const fetchArticles = createAsyncThunk('articles', async () => {
   const res = await axios.get(API)
-  console.log(res);
-  
   return res.data
 })
 
@@ -64,22 +62,22 @@ const articleSlice = createSlice({
   extraReducers: builder => {
     builder
       .addCase(fetchArticles.fulfilled, (state, action) => {
-        state.list = action.payload
+        state.list = action.payload.articles || []
       })
       .addCase(fetchArticleById.fulfilled, (state, action) => {
         state.selected = action.payload
       })
       .addCase(createArticle.fulfilled, (state, action) => {
-        Array(state.list).unshift(action.payload)
+        state.list.unshift(action.payload)
       })
       .addCase(updateArticle.fulfilled, (state, action) => {
         console.log(action);
         
-        const index = Array(state.list).findIndex(a => a._id === action.payload._id)
+        const index = state.list.findIndex(a => a._id === action.payload._id)
         if (index !== -1) state.list[index] = action.payload
       })
       .addCase(deleteArticle.fulfilled, (state, action) => {
-        state.list = Array(state.list).filter(a => a._id !== action.payload)
+        state.list = state.list.filter(a => a._id !== action.payload)
       })
   },
 })

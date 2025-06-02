@@ -6,7 +6,9 @@ import { useNavigate } from 'react-router-dom';
 const ArticleManager = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { articles, loading, error } = useSelector((state) => state.articles.list);
+  const articles = useSelector(state => state.articles.list)
+  const loading = useSelector(state => state.articles.loading)
+  const error = useSelector(state => state.articles.error)
 
   const [selectedId, setSelectedId] = useState(null);
 
@@ -26,12 +28,17 @@ const ArticleManager = () => {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Quản lý bài viết</h1>
-        <button
-          onClick={() => navigate('/articles/new')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-        >
-          Tạo bài viết mới
-        </button>
+        <div className='flex gap-5 items-center'>
+            <button
+                onClick={() => navigate('/articles/new')}
+                className="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-indigo-700"
+            >
+                Tạo bài viết mới
+            </button>
+            <button className='bg-red-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-600'>
+                Đăng xuất
+            </button>
+        </div>
       </div>
 
       {loading && <p>Đang tải...</p>}
@@ -55,13 +62,13 @@ const ArticleManager = () => {
               <td className="border border-gray-300 p-2 text-center space-x-2">
                 <button
                   onClick={() => navigate(`/articles/edit/${article._id}`)}
-                  className="text-indigo-600 hover:underline"
+                  className="text-indigo-600 cursor-pointer hover:underline"
                 >
                   Sửa
                 </button>
                 <button
                   onClick={() => handleDelete(article._id)}
-                  className="text-red-600 hover:underline"
+                  className="text-red-600 cursor-pointer hover:underline"
                 >
                   Xóa
                 </button>
