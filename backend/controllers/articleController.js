@@ -2,37 +2,49 @@ const Article = require('../models/Article');
 const generateSlug = require('../utils/generateSlug');
 
 exports.createArticle = async (req, res) => {
+  console.log("Decoded user:", req.user);
+  console.log("Request body:", req.body);
+
   try {
-    const { title, content, category } = req.body;
-    if (!title || !content || !category) {
-      return res.status(400).json({ message: 'Missing fields' });
+    const { title, content, category, summary, thumbnail, tags } = req.body;
+    
+    if (!title || !content || !category || !summary) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
     const slug = generateSlug(title);
 
-    // Check slug unique
+    // Check if slug already exists
     const existing = await Article.findOne({ slug });
-    if (existing) return res.status(400).json({ message: 'Title already used' });
+    if (existing) {
+      return res.status(400).json({ message: 'Title already used' });
+    }
 
     const article = new Article({
       title,
       slug,
       content,
       category,
-      author: req.user.id
+      summary,
+      thumbnail,
+      tags,
+      author: req.user.id 
     });
 
     await article.save();
+
     res.status(201).json({ message: 'Article created', article });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
+
 exports.updateArticle = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, category } = req.body;
+    const { title, content, category, summary, thumbnail, tags } = req.body;
 
     const article = await Article.findById(id);
     if (!article) return res.status(404).json({ message: 'Article not found' });
@@ -48,13 +60,18 @@ exports.updateArticle = async (req, res) => {
     }
     if (content) article.content = content;
     if (category) article.category = category;
+    if (summary) article.summary = summary;
+    if (thumbnail) article.thumbnail = thumbnail;
+    if (tags) article.tags = tags;
 
     await article.save();
-    res.json({ message: 'Article updated', article });
+    res.json(article);
   } catch (err) {
+    console.log(err); 
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 exports.deleteArticle = async (req, res) => {
   try {
@@ -89,6 +106,30 @@ exports.getArticleBySlug = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Get article by ID + populate author
+const mongoose = require('mongoose');
+
+exports.getArticleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid article ID' });
+    }
+
+    const article = await Article.findById(id)
+      .populate('author', 'username role');
+
+    if (!article) return res.status(404).json({ message: 'Article not found' });
+
+    res.json(article);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
 
 // List articles with filters, pagination
 exports.listArticles = async (req, res) => {

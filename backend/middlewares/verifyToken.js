@@ -11,6 +11,7 @@ function verifyToken(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // { id, role, username }
+    console.log('Decoded JWT:', decoded); // ✅ kiểm tra
     next();
   } catch (err) {
     return res.status(403).json({ message: 'Token is invalid or expired' });

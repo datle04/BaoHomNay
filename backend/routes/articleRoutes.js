@@ -6,7 +6,8 @@ const verifyToken = require('../middlewares/verifyToken');
 const roleCheck = require('../middlewares/roleCheck');
 
 router.get('/', articleController.listArticles);
-router.get('/:slug', articleController.getArticleBySlug);
+router.get('/slug/:slug', articleController.getArticleBySlug);
+router.get('/:id', articleController.getArticleById);
 
 // Create, Update, Delete - restricted to editor/admin
 router.post('/', verifyToken, roleCheck(['admin', 'editor']), articleController.createArticle);
