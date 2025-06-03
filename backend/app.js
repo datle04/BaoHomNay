@@ -9,7 +9,12 @@ const commentRoutes = require('./routes/commentRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 const app = express();
-app.use(cors());
+const cors = require('cors');
+app.use(cors({
+  origin: 'http://localhost:5173', // Thay bằng domain của frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cookieParser());
