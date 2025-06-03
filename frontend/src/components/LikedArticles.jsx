@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 const LikedArticles = () => {
 
     const token = useSelector(state => state.auth.token)
-    const API = 'http://localhost:5000'
+    const API = import.meta.env.VITE_BACK_END_URL
     const [articles, setArticles] = useState([]);
     const articleIds = useSelector((state) => state.auth.user?.upvotedArticles || []);
 
@@ -16,7 +16,7 @@ const LikedArticles = () => {
             if (articleIds.length === 0) return;
 
             const res = await axios.post(
-            `${API}/api/articles/liked`,
+            `${API}/articles/liked`,
             { articleIds },
             { headers: { Authorization: `Bearer ${token}` } }
             );

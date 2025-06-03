@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 
-const API = 'http://localhost:5000/api/auth'
+// const API = 'http://localhost:5000/api/auth'
+const API = import.meta.env.VITE_BACK_END_URL
 
 const userFromStorage = localStorage.getItem('user');
 const tokenFromStorage = localStorage.getItem('token');
@@ -15,7 +16,7 @@ const initialState = {
 
 export const loginUser = createAsyncThunk('auth/loginUser', async (credentials, thunkAPI) => {
   try {
-    const res = await axios.post(`${API}/login`, credentials)
+    const res = await axios.post(`${API}/auth/login`, credentials)
     return res.data
   } catch (err) {
     return thunkAPI.rejectWithValue(err.response.data.message)
@@ -24,7 +25,7 @@ export const loginUser = createAsyncThunk('auth/loginUser', async (credentials, 
 
 export const registerUser = createAsyncThunk('auth/registerUser', async (data, thunkAPI) => {
   try {
-    const res = await axios.post(`${API}/register`, data)
+    const res = await axios.post(`${API}/auth/register`, data)
     return res.data
   } catch (err) {
     return thunkAPI.rejectWithValue(err.response.data.message)
@@ -39,7 +40,7 @@ export const voteArticle = createAsyncThunk(
       const token = state.auth.token;
 
       const res = await axios.post(
-        `http://localhost:5000/api/articles/${articleId}/vote`,
+        `${API}/articles/${articleId}/vote`,
         { type },
         { headers: { Authorization: `Bearer ${token}` } }
       );

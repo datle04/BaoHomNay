@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 
-const API = 'http://localhost:5000/api/articles'
+// const API = 'http://localhost:5000/api/articles'
+const API = import.meta.env.VITE_BACK_END_URL
 
 const initialState = {
   list: [],
@@ -12,27 +13,29 @@ const initialState = {
 
 export const fetchArticles = createAsyncThunk('articles/fetchAll', async (category) => {
   const query = category ? `?category=${category}` : '';
-  const res = await axios.get(`${API}${query}`);
+  console.log(API);
+  
+  const res = await axios.get(`${API}/articles${query}`);
   return res.data;
 });
 
 export const fetchArticleByCategory = createAsyncThunk('articles/fetchByCategory', async (category) => {
-  const res = await axios.get(`${API}/category/${category}`)
+  const res = await axios.get(`${API}/articles/category/${category}`)
   return res.data
 })
 
 export const fetchArticlesByAuthor = createAsyncThunk('articles/fetchByAuthor', async id => {
-  const res = await axios.get(`${API}/editor/${id}`)
+  const res = await axios.get(`${API}/articles/editor/${id}`)
   return res.data
 })
 
 export const fetchArticleById = createAsyncThunk('articles/fetchById', async id => {
-  const res = await axios.get(`${API}/${id}`)
+  const res = await axios.get(`${API}/articles/${id}`)
   return res.data
 })
 
 export const fetchArticleBySlug = createAsyncThunk('articles/fetchBySlug', async slug => {
-  const res = await axios.get(`${API}/slug/${slug}`,{
+  const res = await axios.get(`${API}/articles/slug/${slug}`,{
     headers: {
     'Cache-Control': 'no-cache'
   }
@@ -42,7 +45,7 @@ export const fetchArticleBySlug = createAsyncThunk('articles/fetchBySlug', async
 
 export const createArticle = createAsyncThunk('articles/create', async (data, thunkAPI) => {
   const token = thunkAPI.getState().auth.token 
-  const res = await axios.post(API, data, {
+  const res = await axios.post(`${API}/articles`, data, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return res.data
@@ -52,7 +55,7 @@ export const updateArticle = createAsyncThunk('articles/update', async ({ id, da
   console.log(data);
   
   const token = thunkAPI.getState().auth.token
-  const res = await axios.put(`${API}/${id}`, data, {
+  const res = await axios.put(`${API}/articles/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return res.data
@@ -60,7 +63,7 @@ export const updateArticle = createAsyncThunk('articles/update', async ({ id, da
 
 export const deleteArticle = createAsyncThunk('articles/delete', async (id, thunkAPI) => {
   const token = thunkAPI.getState().auth.token
-  await axios.delete(`${API}/${id}`, {
+  await axios.delete(`${API}/articles/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return id
