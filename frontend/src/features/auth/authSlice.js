@@ -3,12 +3,15 @@ import axios from 'axios'
 
 const API = 'http://localhost:5000/api/auth'
 
+const userFromStorage = localStorage.getItem('user');
+const tokenFromStorage = localStorage.getItem('token');
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
-  token: localStorage.getItem('token') || null,
+  user: userFromStorage ? JSON.parse(userFromStorage) : null,
+  token: tokenFromStorage || null,
   loading: false,
   error: null,
-}
+};
 
 export const loginUser = createAsyncThunk('auth/loginUser', async (credentials, thunkAPI) => {
   try {
@@ -28,13 +31,40 @@ export const registerUser = createAsyncThunk('auth/registerUser', async (data, t
   }
 })
 
+export const voteArticle = createAsyncThunk(
+  'auth/voteArticle',
+  async ({ articleId, type }, thunkAPI) => {
+    try {
+      const state = thunkAPI.getState();
+      const token = state.auth.token;
+
+      const res = await axios.post(
+        `http://localhost:5000/api/articles/${articleId}/vote`,
+        { type },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return {
+        articleId,
+        type,
+        updatedUser: res.data.updatedUser, // bạn cần trả về `updatedUser` từ backend
+      };
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Vote failed');
+    }
+  }
+);
+
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     logout: state => {
-      state.user = null
-      state.token = null
+      state.user = null;
+      state.token = null;
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     },
   },
   extraReducers: builder => {
@@ -57,6 +87,19 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.user = action.payload.user
         state.token = action.payload.token
+      })
+      .addCase(voteArticle.fulfilled, (state, action) => {
+        const { updatedUser } = action.payload;
+
+        // Cập nhật chỉ upvotedArticles của user
+        state.user.upvotedArticles = updatedUser.upvotedArticles;
+
+        // Đồng bộ localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser) {
+          storedUser.upvotedArticles = updatedUser.upvotedArticles;
+          localStorage.setItem('user', JSON.stringify(storedUser));
+        }
       })
   },
 })

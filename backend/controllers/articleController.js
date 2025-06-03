@@ -1,4 +1,5 @@
 const Article = require('../models/Article');
+const User = require('../models/User');
 const generateSlug = require('../utils/generateSlug');
 
 exports.createArticle = async (req, res) => {
@@ -134,7 +135,7 @@ exports.getArticleById = async (req, res) => {
 // List articles with filters, pagination
 exports.listArticles = async (req, res) => {
   try {
-    let { page = 1, limit = 10, category, sortBy } = req.query;
+    let { page = 1, limit = 1000, category, sortBy } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
 
@@ -163,28 +164,142 @@ exports.listArticles = async (req, res) => {
   }
 };
 
-// Vote up/down logic
-exports.voteArticle = async (req, res) => {
+// GET /api/articles/category
+exports.listArticlesByCategory = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { voteType } = req.body; // 'up' or 'down'
-    if (!['up', 'down'].includes(voteType)) {
-      return res.status(400).json({ message: 'Invalid vote type' });
+    let { page = 1, limit = 1000, category, sortBy = '' } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const filter = {};
+    if (category) {
+      filter.category = category;
     }
 
-    const article = await Article.findById(id);
-    if (!article) return res.status(404).json({ message: 'Article not found' });
+    let query = Article.find(filter).populate('category');
 
-    // Remove user from both votes first
-    article.votes.up = article.votes.up.filter(v => v.userId.toString() !== req.user.id);
-    article.votes.down = article.votes.down.filter(v => v.userId.toString() !== req.user.id);
+    if (sortBy === 'topVote') {
+      query = query.sort({ 'votes.up.length': -1, 'votes.down.length': 1, createdAt: -1 });
+    } else if (sortBy === 'controversial') {
+      // Không thể dùng $expr trong sort() => cần chuyển sang aggregate hoặc tính ở frontend
+      query = query.sort({ createdAt: -1 }); // fallback
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
 
-    // Add to voteType array
-    article.votes[voteType].push({ userId: req.user.id });
+    const total = await Article.countDocuments(filter);
+    const articles = await query.skip((page - 1) * limit).limit(limit);
 
-    await article.save();
-    res.json({ message: `Voted ${voteType}`, votes: article.votes });
+    res.json({ total, page, limit, articles });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+// List articles by current logged-in author
+exports.listArticlesByAuthor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { page = 1, limit = 1000, category, sortBy } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const filter = { author: id }; // 👈 Lọc theo tác giả hiện tại
+
+    if (category) filter.category = category;
+
+    let query = Article.find(filter).populate('author', 'username');
+
+    // Sorting options
+    if (sortBy === 'topVote') {
+      query = query.sort({
+        'votes.up.length': -1,
+        'votes.down.length': 1,
+        createdAt: -1,
+      });
+    } else if (sortBy === 'controversial') {
+      query = query.sort({
+        'votes.up.length': -1,
+        'votes.down.length': -1,
+        createdAt: -1,
+      });
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    const total = await Article.countDocuments(filter);
+    const articles = await query.skip((page - 1) * limit).limit(limit);
+
+    res.json({ total, page, limit, articles });
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
+// Vote up/down logic
+exports.voteArticle = async (req, res) => {
+  try {
+    const articleId = req.params.id;
+    const { type } = req.body; // 'up' hoặc 'down'
+    const userId = req.user.id;
+
+    const article = await Article.findById(articleId);
+    const user = await User.findById(userId);
+
+    if (!article || !user) {
+      return res.status(404).json({ message: 'Article or user not found' });
+    }
+
+    // Nếu chưa có, khởi tạo mảng
+    if (!user.upvotedArticles) user.upvotedArticles = [];
+
+    // Xoá vote cũ
+    article.votes.up = article.votes.up.filter(v => !v.userId.equals(userId));
+    user.upvotedArticles = user.upvotedArticles.filter(aid => !aid.equals(articleId));
+
+    // Thêm vote nếu type là 'up'
+    if (type === 'up') {
+      article.votes.up.push({ userId });
+      user.upvotedArticles.push(articleId);
+    }
+
+    await article.save();
+    await user.save();
+
+    res.json({
+      message: 'Voted successfully',
+      articleVotes: article.votes,
+      updatedUser: {
+        _id: user._id,
+        upvotedArticles: user.upvotedArticles,
+      },
+    });
+  } catch (error) {
+    console.error('Vote error:', error);
+    res.status(500).json({ message: 'Server error during voting' });
+  }
+};
+
+// controllers/ArticleController.js
+exports.getLikedArticles = async (req, res) => {
+  try {
+    const { articleIds } = req.body;
+
+    if (!articleIds || !Array.isArray(articleIds)) {
+      return res.status(400).json({ message: 'Invalid articleIds' });
+    }
+
+    const articles = await Article.find({
+      _id: { $in: articleIds }
+    }).select('-content'); // nếu không cần nội dung chi tiết
+
+    res.json({ articles });
+  } catch (err) {
+    console.log(err);
+    
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}

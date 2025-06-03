@@ -20,7 +20,9 @@ exports.register = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      role: 'client'  // mặc định role client
+      role: 'client',  // mặc định role client
+      upvotedArticles: [],    // thêm field này
+      downvotedArticles: []   // thêm field này
     });
 
     await user.save();
@@ -30,6 +32,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 exports.login = async (req, res) => {
   try {
@@ -47,7 +50,11 @@ exports.login = async (req, res) => {
     const payload = {
       id: user._id,
       role: user.role,
-      username: user.username
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      upvotedArticles: user.upvotedArticles || [],
+      downvotedArticles: user.downvotedArticles || []
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });

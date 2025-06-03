@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchArticles, deleteArticle } from '../features/articles/articleSlice';
+import { fetchArticles, deleteArticle, fetchArticlesByAuthor } from '../features/articles/articleSlice';
 import { useNavigate } from 'react-router-dom';
+import { logout } from '../features/auth/authSlice';
 
 const ArticleManager = () => {
+  const user = useSelector(state => state.auth.user)
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const articles = useSelector(state => state.articles.list)
@@ -13,9 +15,11 @@ const ArticleManager = () => {
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchArticles());
-    console.log(articles);
-    
+    if(user.role === 'admin'){
+      dispatch(fetchArticles());
+    } else {
+      dispatch(fetchArticlesByAuthor(user.id))
+    }
   }, [dispatch]);
 
   const handleDelete = (id) => {
@@ -23,6 +27,11 @@ const ArticleManager = () => {
       dispatch(deleteArticle(id));
     }
   };
+
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/login')
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -35,7 +44,10 @@ const ArticleManager = () => {
             >
                 Tạo bài viết mới
             </button>
-            <button className='bg-red-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-600'>
+            <button
+              onClick={handleLogout}
+              className='bg-red-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-600
+             '>
                 Đăng xuất
             </button>
         </div>

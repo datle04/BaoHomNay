@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -11,6 +11,7 @@ import {
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '../utils/cloudinaryUpload';
+import ImageResize from 'quill-image-resize-module-react'
 
 const ArticleForm = () => {
   const user = useSelector(state => state.auth)
@@ -80,21 +81,39 @@ const ArticleForm = () => {
         };
     };
 
+  Quill.register('modules/imageResize', ImageResize)
 
   const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link', 'image'],
-        ['clean'],
-      ],
-      handlers: {
-        image: imageHandler,
-      },
+  toolbar: {
+    container: [
+      [{ header: [1, 2, 3, false] }],
+      [{ size: ['small', false, 'large', 'huge'] }],
+      [{ color: [] }, { background: [] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
+      ['link', 'image'],
+      ['clean']
+    ],
+    handlers: {
+      image: imageHandler,
     },
-  }), []);
+  },
+  imageResize: {
+    modules: ['Resize', 'DisplaySize'],
+  },
+}), []);
+
+const formats = [
+  'header',
+  'size',
+  'color', 'background',
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'align',
+  'link', 'image'
+];
+
 
     const handleThumbnailUpload = async () => {
         if (!thumbnailFile) return thumbnailUrl;
@@ -170,11 +189,13 @@ const ArticleForm = () => {
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">-- Chọn chuyên mục --</option>
-            <option value="Thời sự">Thời sự</option>
-            <option value="Công nghệ">Công nghệ</option>
-            <option value="Giáo dục">Giáo dục</option>
-            <option value="Khoa học">Khoa học</option>
-            <option value="Thế giới">Thế giới</option>
+            <option value="thoisu">Thời sự</option>
+            <option value="congnghe">Công nghệ</option>
+            <option value="giaoduc">Giáo dục</option>
+            <option value="khoahoc">Khoa học</option>
+            <option value="thegioi">Thế giới</option>
+            <option value="thethao">Thể thao</option>
+            <option value="xahoi">Xã hội</option>
           </select>
         </div>
 
@@ -194,8 +215,9 @@ const ArticleForm = () => {
           <input
             type="file"
             accept="image/*"
+            placeholder='Chọn hình ảnh...'
             onChange={(e) => setThumbnailFile(e.target.files[0])}
-            className="w-full"
+            className="w-50 text-center p-2 border border-slate-300 cursor-pointer hover:bg-slate-100"
           />
           {thumbnailUrl && (
             <img src={thumbnailUrl} alt="Thumbnail" className="mt-2 w-40 rounded shadow" />
@@ -208,6 +230,7 @@ const ArticleForm = () => {
             ref={quillRef}
             value={content}
             onChange={setContent}
+            formats={formats}
             modules={modules}
             theme="snow"
           />
@@ -216,7 +239,7 @@ const ArticleForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition disabled:opacity-50"
+          className="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-indigo-700 transition disabled:opacity-50"
         >
           {id ? (loading ? 'Đang cập nhật...' : 'Cập nhật bài viết') : (loading ? 'Đang tạo...' : 'Tạo bài viết')}
         </button>

@@ -10,8 +10,19 @@ const initialState = {
   error: null,
 }
 
-export const fetchArticles = createAsyncThunk('articles', async () => {
-  const res = await axios.get(API)
+export const fetchArticles = createAsyncThunk('articles/fetchAll', async (category) => {
+  const query = category ? `?category=${category}` : '';
+  const res = await axios.get(`${API}${query}`);
+  return res.data;
+});
+
+export const fetchArticleByCategory = createAsyncThunk('articles/fetchByCategory', async (category) => {
+  const res = await axios.get(`${API}/category/${category}`)
+  return res.data
+})
+
+export const fetchArticlesByAuthor = createAsyncThunk('articles/fetchByAuthor', async id => {
+  const res = await axios.get(`${API}/editor/${id}`)
   return res.data
 })
 
@@ -21,7 +32,11 @@ export const fetchArticleById = createAsyncThunk('articles/fetchById', async id 
 })
 
 export const fetchArticleBySlug = createAsyncThunk('articles/fetchBySlug', async slug => {
-  const res = await axios.get(`${API}/slug/${slug}`)
+  const res = await axios.get(`${API}/slug/${slug}`,{
+    headers: {
+    'Cache-Control': 'no-cache'
+  }
+  })
   return res.data
 })
 
@@ -66,6 +81,12 @@ const articleSlice = createSlice({
       })
       .addCase(fetchArticleById.fulfilled, (state, action) => {
         state.selected = action.payload
+      })
+      .addCase(fetchArticleBySlug.fulfilled, (state, action) => {
+        state.selected = action.payload
+      })
+      .addCase(fetchArticlesByAuthor.fulfilled, (state, action) => {
+        state.list = action.payload.articles || []
       })
       .addCase(createArticle.fulfilled, (state, action) => {
         state.list.unshift(action.payload)
